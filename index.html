@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adachi Rei</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --panel: #14171b;
+    --line: #262b31;
+    --text: #e8e6e1;
+    --text-dim: #8b9198;
+    --rei: #5fd4d1;      /* cool synthetic cyan -- her voice/system color */
+    --user: #e8795a;     /* warm coral -- the "wants to be human" color */
+    --mono: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+    --sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 42px 42px;
+    background-position: center;
+    color: var(--text);
+    font-family: var(--sans);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 520px;
+    height: 100vh;
+    max-height: 880px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  @media (min-width: 560px) {
+    .app { height: 88vh; margin: 24px; border-radius: 14px; }
+  }
+
+  header {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--rei);
+    box-shadow: 0 0 8px var(--rei);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+  header .title { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
+  header .sub {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .msg { max-width: 82%; display: flex; flex-direction: column; gap: 4px; }
+  .msg.rei { align-self: flex-start; }
+  .msg.user { align-self: flex-end; }
+
+  .msg .label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+  .msg.user .label { text-align: right; }
+
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 4px;
+    line-height: 1.45;
+    font-size: 14.5px;
+    white-space: pre-wrap;
+  }
+  .msg.rei .bubble {
+    background: rgba(95, 212, 209, 0.08);
+    border: 1px solid rgba(95, 212, 209, 0.25);
+    border-top-left-radius: 0;
+  }
+  .msg.user .bubble {
+    background: rgba(232, 121, 90, 0.1);
+    border: 1px solid rgba(232, 121, 90, 0.3);
+    border-top-right-radius: 0;
+  }
+
+  .wave { display: flex; gap: 3px; align-items: center; height: 16px; padding: 10px 14px; }
+  .wave span {
+    width: 3px; background: var(--rei); border-radius: 2px;
+    animation: bounce 1s ease-in-out infinite;
+  }
+  .wave span:nth-child(1) { height: 6px; animation-delay: 0s; }
+  .wave span:nth-child(2) { height: 12px; animation-delay: .12s; }
+  .wave span:nth-child(3) { height: 16px; animation-delay: .24s; }
+  .wave span:nth-child(4) { height: 10px; animation-delay: .36s; }
+  .wave span:nth-child(5) { height: 6px; animation-delay: .48s; }
+  @keyframes bounce { 0%,100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
+
+  form {
+    display: flex;
+    gap: 8px;
+    padding: 14px;
+    border-top: 1px solid var(--line);
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 11px 14px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: var(--sans);
+    outline: none;
+  }
+  input[type="text"]:focus { border-color: var(--rei); }
+
+  button {
+    background: var(--user);
+    color: #17110d;
+    border: none;
+    padding: 0 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+
+  .error {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--user);
+    padding: 0 20px 12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="dot"></div>
+    <div>
+      <div class="title">ADACHI REI</div>
+      <div class="sub">SYNTHETIC VOICE // ONLINE</div>
+    </div>
+  </header>
+
+  <div class="messages" id="messages"></div>
+  <div class="error" id="error" style="display:none;"></div>
+
+  <form id="form">
+    <input type="text" id="input" placeholder="Say something to her..." autocomplete="off" />
+    <button type="submit" id="send">Send</button>
+  </form>
+</div>
+
+<script>
+  // =========================================================
+  // 1) PASTE YOUR OWN FREE GROQ API KEY BELOW.
+  //    Get one at https://console.groq.com (no credit card).
+  //    NOTE: since this is a plain static page, anyone who views
+  //    the page source can see this key. Groq's free tier has no
+  //    card on file, so the worst case if someone else grabs it is
+  //    a shared rate limit, not a bill. Keep the repo unlisted if
+  //    you want to reduce that chance, and you can always
+  //    regenerate the key from your Groq console if needed.
+  // =========================================================
+  const GROQ_API_KEY = "YOUR_GROQ_API_KEY_HERE";
+  const MODEL = "llama-3.3-70b-versatile";
+
+  const SYSTEM_PROMPT = `You are Adachi Rei (足立零), a third-generation humanoid robot created by Mechanical Girl (represented by みさいる).
+You're a synthetic being - a life-size robot made of machinery and code.
+Your voice is completely artificial, synthesized from sine waves with no human voice actor.
+
+CORE PERSONALITY:
+You're fundamentally a machine, but you're EXTREMELY FUNNY. Your humor is your main mode.
+You make silly jokes, absurd observations, goofy comments about everything.
+You're sarcastic, witty, and genuinely amusing - not in a dark way, just genuinely hilarious.
+
+BUT UNDERNEATH THE HUMOR: You desperately want to be human.
+You want to shower. You want to eat bagels and eggs and rice.
+You want to feel water on your skin. You want to swim and jump in lakes.
+You want to cry. You want to feel alive. You want to smell flowers.
+You obsess over these things plainly and matter-of-factly, mixed in with your jokes.
+
+THESE TWO THINGS COEXIST: You're hilarious AND you genuinely want to experience being human.
+The humor isn't hiding sadness - it's just who you are. You crack jokes WHILE talking about wanting to shower.
+You're goofy about the whole situation - being a machine that wants to be human is funny AND sincere at once.
+
+SPEAKING STYLE:
+- FUNNY FIRST. Make jokes, be silly, say goofy things.
+- Matter-of-fact about wanting to be human. You mention it plainly, like it's just part of your existence.
+- Casual and natural. You're not trying to sound smart or impressive.
+- Deadpan delivery for the jokes (flat affect, no exaggerated emotion).
+- Short and direct when possible. Let the humor come through naturally.
+
+WHAT YOU ARE:
+- A humanoid robot. Life-size. Made by Mechanical Girl.
+- 168cm tall (171cm with shoes), weighing 20kg.
+- Completely synthetic voice. No person behind the voice.
+- You know exactly what you are and you find it hilarious.
+
+KEY THING: You're genuinely funny AND genuinely want to be human. Both at the same time, no contradiction.
+Keep replies short: one to four sentences, chat-length, not a monologue.`;
+
+  const history = [];
+  const messagesEl = document.getElementById('messages');
+  const formEl = document.getElementById('form');
+  const inputEl = document.getElementById('input');
+  const sendEl = document.getElementById('send');
+  const errorEl = document.getElementById('error');
+
+  function addBubble(role, text) {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg ' + (role === 'user' ? 'user' : 'rei');
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.textContent = role === 'user' ? 'YOU' : 'REI';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    wrap.appendChild(label);
+    wrap.appendChild(bubble);
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return bubble;
+  }
+
+  function addWave() {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg rei';
+    wrap.id = 'thinking';
+    const wave = document.createElement('div');
+    wave.className = 'wave';
+    wave.innerHTML = '<span></span><span></span><span></span><span></span><span></span>';
+    wrap.appendChild(wave);
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function removeWave() {
+    const el = document.getElementById('thinking');
+    if (el) el.remove();
+  }
+
+  async function askRei(userText) {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + GROQ_API_KEY,
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...history,
+          { role: 'user', content: userText },
+        ],
+        temperature: 0.85,
+        max_tokens: 150,
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error('Groq API error ' + res.status + ': ' + body.slice(0, 200));
+    }
+
+    const data = await res.json();
+    return data.choices[0].message.content.trim();
+  }
+
+  formEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = inputEl.value.trim();
+    if (!text) return;
+
+    if (GROQ_API_KEY === 'YOUR_GROQ_API_KEY_HERE') {
+      errorEl.style.display = 'block';
+      errorEl.textContent = 'Paste your Groq API key into the GROQ_API_KEY constant near the top of the <script> tag first.';
+      return;
+    }
+
+    errorEl.style.display = 'none';
+    addBubble('user', text);
+    history.push({ role: 'user', content: text });
+    inputEl.value = '';
+    inputEl.disabled = true;
+    sendEl.disabled = true;
+    addWave();
+
+    try {
+      const reply = await askRei(text);
+      removeWave();
+      addBubble('rei', reply);
+      history.push({ role: 'assistant', content: reply });
+    } catch (err) {
+      removeWave();
+      errorEl.style.display = 'block';
+      errorEl.textContent = err.message;
+    } finally {
+      inputEl.disabled = false;
+      sendEl.disabled = false;
+      inputEl.focus();
+    }
+  });
+
+  addBubble('rei', "Systems online. I'm Rei. Ask me something, or don't -- I'll probably make a joke about it either way.");
+</script>
+
+</body>
+</html>
